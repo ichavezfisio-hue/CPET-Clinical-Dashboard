@@ -1,0 +1,316 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CPET Diagnostic Dashboard - Lab AEP </title>
+    <style>
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #f4f7f6; color: #333; margin: 0; padding: 20px; }
+        .header { text-align: center; margin-bottom: 25px; border-bottom: 3px solid #2980b9; padding-bottom: 10px; }
+        .header h1 { margin: 0; color: #2c3e50; }
+        .container { display: flex; gap: 20px; max-width: 1400px; margin: 0 auto; }
+        .panel { background: #fff; padding: 20px; border-radius: 8px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); flex: 1; overflow-y: auto; max-height: 90vh; }
+        .section-title { border-bottom: 2px solid #3498db; padding-bottom: 5px; margin-top: 0; color: #2980b9; font-size: 1.2em; }
+        .form-row { display: flex; gap: 15px; margin-bottom: 15px; flex-wrap: wrap; }
+        .form-group { flex: 1; min-width: 120px; }
+        label { display: block; font-weight: bold; margin-bottom: 5px; font-size: 0.85em; color: #555; }
+        input[type="text"], input[type="number"], select { width: 100%; padding: 8px; border: 1px solid #ccc; border-radius: 4px; box-sizing: border-box; }
+        .checkbox-group { display: flex; align-items: center; gap: 8px; margin-bottom: 10px; font-size: 0.9em; }
+        
+        .btn-container { display: flex; gap: 10px; margin-top: 15px; }
+        button { background-color: #3498db; color: white; border: none; padding: 12px 20px; cursor: pointer; border-radius: 4px; font-size: 1em; flex: 1; font-weight: bold; }
+        button:hover { background-color: #2980b9; }
+        button.print-btn { background-color: #27ae60; }
+        button.print-btn:hover { background-color: #2ecc71; }
+        
+        #report-output { width: 100%; min-height: 600px; padding: 20px; border: 1px solid #ccc; border-radius: 4px; background-color: #fff; font-size: 0.95em; line-height: 1.6; box-sizing: border-box; }
+        
+        /* Print Styles */
+        @media print {
+            body { background: white; padding: 0; }
+            .panel:first-child, .header, .btn-container { display: none; }
+            .container { display: block; max-width: 100%; }
+            .panel { box-shadow: none; max-height: none; padding: 0; }
+            #report-output { border: none; padding: 0; }
+        }
+    </style>
+</head>
+<body>
+
+<div class="header">
+    <h1>🏃‍♂️ CPET Clinical Diagnostics Dashboard</h1>
+</div>
+
+<div class="container">
+    <!-- Input Panel -->
+    <div class="panel">
+        <h2 class="section-title">Patient Data Entry</h2>
+        
+        <div class="form-row">
+            <div class="form-group"><label>Name</label><input type="text" id="p_name" value="Patient X"></div>
+            <div class="form-group"><label>Age</label><input type="number" id="p_age" value="35"></div>
+            <div class="form-group"><label>Sex</label>
+                <select id="p_sex">
+                    <option value="Male">Male</option>
+                    <option value="Female">Female</option>
+                </select>
+            </div>
+        </div>
+
+        <h3 class="section-title">1. Maximum & Peak Responses</h3>
+        <div class="form-row">
+            <div class="form-group"><label>VO2max/peak (ml/kg/min)</label><input type="number" step="0.1" id="vo2_rel" value="40.5"></div>
+            <div class="form-group"><label>O2 Pulse (ml/beat)</label><input type="number" step="0.1" id="o2_pulse" value="16.0"></div>
+            <div class="form-group"><label>Tidal Volume (L/breath)</label><input type="number" step="0.1" id="vt_max" value="2.6"></div>
+        </div>
+        <div class="checkbox-group"><input type="checkbox" id="vo2_plateau"><label>Evident VO2 plateau (< 150 ml/min)</label></div>
+        <div class="form-row">
+            <div class="form-group"><label>HR Max Achieved (%)</label><input type="number" id="hr_max_pct" value="95"></div>
+            <div class="form-group"><label>Max RER</label><input type="number" step="0.01" id="rer" value="1.12"></div>
+            <div class="form-group"><label>Max BF (br/min)</label><input type="number" id="bf" value="48"></div>
+        </div>
+
+        <h3 class="section-title">2. Kinetics & Curves</h3>
+        <div class="form-row">
+            <div class="form-group"><label>VE/VCO2 Slope</label><input type="number" id="ve_vco2" value="28"></div>
+            <div class="form-group"><label>SmO2 Pattern</label>
+                <select id="smo2_behavior">
+                    <option value="normal">Normal</option>
+                    <option value="marked_desat_low_o2">Marked desat + Low O2 pulse</option>
+                    <option value="late_desat">Late desat + Low VO2</option>
+                    <option value="marked_desat_normal">Marked desat + Normal O2 pulse/VO2</option>
+                </select>
+            </div>
+        </div>
+        <div class="checkbox-group"><input type="checkbox" id="irregular_vt"><label>Irregular Tidal Volume (Vt) pattern</label></div>
+        <div class="checkbox-group"><input type="checkbox" id="early_termination"><label>Early termination (volitional fatigue)</label></div>
+        
+        <div class="form-row">
+            <div class="form-group"><label>O2 Pulse / HR Curve</label>
+                <select id="o2_pulse_behavior">
+                    <option value="normal">Normal / Regular</option>
+                    <option value="early_plateau">Early plateau < Max</option>
+                    <option value="low_flat_regular_hr">< Max + Flat O2 pulse + Regular HR</option>
+                    <option value="low_irregular_hr">< Max + Irregular HR curve</option>
+                </select>
+            </div>
+            <div class="form-group"><label>Deflection Sequence</label>
+                <select id="cv_sequence">
+                    <option value="none">Normal / Synchronized</option>
+                    <option value="o2_first">O2 plateau precedes HR deflection</option>
+                    <option value="hr_first">HR deflection precedes O2 plateau</option>
+                </select>
+            </div>
+        </div>
+
+        <h3 class="section-title">3. Submaximal & Metabolic Flexibility</h3>
+        <div class="form-row">
+            <div class="form-group"><label>VT (% VO2peak)</label><input type="number" id="vt_pct" value="55"></div>
+            <div class="form-group"><label>MFO (g/min)</label><input type="number" step="0.01" id="mfo" value="0.45"></div>
+        </div>
+        <div class="checkbox-group"><input type="checkbox" id="high_slope_hr_bf"><label>Linear HR & BF with High Slope</label></div>
+        
+        <!-- Updated Metabolic Inflexibility Parameters -->
+        <div class="form-row">
+            <div class="form-group"><label>FATmax Occurred In</label>
+                <select id="fatmax_stage">
+                    <option value="late">Later stages (Normal)</option>
+                    <option value="early">First 3 test stages (Low)</option>
+                </select>
+            </div>
+            <div class="form-group"><label>Cross-over Point In</label>
+                <select id="crossover_stage">
+                    <option value="late">Later stages (Normal)</option>
+                    <option value="early">First 4 test stages (Early)</option>
+                </select>
+            </div>
+            <div class="form-group"><label>Fat Oxidation Curve</label>
+                <select id="curve_symmetry">
+                    <option value="normal">Broad / Symmetrical</option>
+                    <option value="narrow">Narrow / Left-shifted</option>
+                </select>
+            </div>
+        </div>
+
+        <div class="btn-container">
+            <button onclick="generateReport()">Generate Standardized Report</button>
+            <button class="print-btn" onclick="window.print()">Print Report</button>
+        </div>
+    </div>
+
+    <!-- Output Panel -->
+    <div class="panel">
+        <h2 class="section-title">Standardized Patient Report</h2>
+        <div id="report-output">
+            <p style="color:#7f8c8d; font-style:italic;">Fill out the data to the left and click 'Generate' to obtain the automated report...</p>
+        </div>
+    </div>
+</div>
+
+<script>
+function getACSM(sex, age, vo2) {
+    let idx = age >= 80 ? 6 : age >= 70 ? 5 : age >= 60 ? 4 : age >= 50 ? 3 : age >= 40 ? 2 : age >= 30 ? 1 : 0;
+    const m_cuts = [
+        [63.5, 54.5, 49.0, 43.6, 35.2], [58.8, 50.0, 43.4, 37.0, 29.8], [54.6, 45.2, 37.9, 32.4, 26.7],
+        [47.6, 38.3, 31.8, 26.9, 22.2], [40.6, 32.0, 26.5, 22.8, 18.5], [34.0, 25.9, 22.2, 19.1, 15.9], [24.1, 21.4, 18.4, 16.6, 14.8]
+    ];
+    const f_cuts = [
+        [52.1, 44.8, 39.0, 34.0, 27.2], [45.9, 37.0, 31.0, 26.4, 21.9], [41.1, 33.0, 27.7, 23.9, 19.7],
+        [36.0, 28.4, 24.6, 21.5, 18.5], [29.1, 24.3, 20.9, 18.3, 15.4], [24.3, 20.8, 18.3, 16.2, 14.0], [22.7, 18.4, 16.0, 14.7, 12.6]
+    ];
+    let c = sex === "Male" ? m_cuts[idx] : f_cuts[idx];
+    if (vo2 >= c[0]) return { cls: "Superior", pct: 92 }; 
+    if (vo2 >= c[1]) return { cls: "Excellent", pct: 75 }; 
+    if (vo2 >= c[2]) return { cls: "Good", pct: 58 };
+    if (vo2 >= c[3]) return { cls: "Fair", pct: 41 }; 
+    if (vo2 >= c[4]) return { cls: "Poor", pct: 25 }; 
+    return { cls: "Very Poor", pct: 8 };
+}
+
+function makeProgressBar(label, actual, target, unit, maxScale = 1.2) {
+    let maxVal = target * maxScale;
+    let actualPct = Math.min(100, (actual / maxVal) * 100);
+    let targetPct = (target / maxVal) * 100;
+    let color = actual >= target ? '#27ae60' : '#e74c3c';
+    
+    return `
+    <div style="margin-bottom: 12px;">
+        <div style="display: flex; justify-content: space-between; font-size: 0.9em; margin-bottom: 3px;">
+            <span><strong>${label}</strong>: ${actual} ${unit}</span>
+            <span style="color:#7f8c8d;">Target: ${target} ${unit}</span>
+        </div>
+        <div style="position: relative; width: 100%; height: 18px; background: #ecf0f1; border-radius: 9px; overflow: hidden; box-shadow: inset 0 1px 3px rgba(0,0,0,0.1);">
+            <div style="width: ${actualPct}%; height: 100%; background: ${color}; transition: 0.5s;"></div>
+            <div style="position: absolute; left: ${targetPct}%; top: 0; height: 100%; width: 3px; background: #2c3e50; z-index: 2;"></div>
+        </div>
+    </div>`;
+}
+
+function generateReport() {
+    let sex = document.getElementById('p_sex').value;
+    let age = parseInt(document.getElementById('p_age').value);
+    let vo2 = parseFloat(document.getElementById('vo2_rel').value);
+    let o2p = parseFloat(document.getElementById('o2_pulse').value);
+    let vt_max = parseFloat(document.getElementById('vt_max').value);
+    let hr_pct = parseFloat(document.getElementById('hr_max_pct').value);
+    
+    let html = `
+        <div style="text-align:center; border-bottom: 2px solid #bdc3c7; margin-bottom: 15px; padding-bottom: 10px;">
+            <h2 style="margin: 0; color: #2c3e50;">CLINICAL CARDIOPULMONARY EXERCISE TEST (CPET) REPORT</h2>
+            <p style="margin: 5px 0 0 0; font-size: 1.1em;"><strong>Patient:</strong> ${document.getElementById('p_name').value} | <strong>Age:</strong> ${age} | <strong>Sex:</strong> ${sex}</p>
+        </div>
+    `;
+
+    // 1. Validation & ACSM
+    let plateau = document.getElementById('vo2_plateau').checked;
+    let criteria = (hr_pct > 90 ? 1 : 0) + (parseFloat(document.getElementById('rer').value) >= 1.10 ? 1 : 0) + (parseFloat(document.getElementById('bf').value) < 50 ? 1 : 0);
+    
+    html += `<h3 style="color: #2980b9;">1. AEROBIC CAPACITY & VALIDATION</h3><ul>`;
+    if (plateau || criteria >= 2) {
+        html += `<li><strong>Validated Maximal Oxygen Uptake achieved:</strong> ${vo2} ml/kg/min.</li>`;
+    } else if (criteria === 1) {
+        html += `<li><strong>Did not meet full criteria.</strong> Result marked as Peak Oxygen Pulse: ${vo2} ml/kg/min.</li>`;
+    } else {
+        html += `<li><strong>Submaximal effort indicated:</strong> ${vo2} ml/kg/min.</li>`;
+    }
+    
+    let fitness = getACSM(sex, age, vo2);
+    html += `<li><strong>ACSM Fitness Classification:</strong> <span style="text-transform:uppercase; font-weight:bold;">${fitness.cls}</span> (adjusted for age and sex).</li></ul>`;
+
+    // Visual Fitness Representation
+    html += `
+        <div style="margin: 25px 0;">
+            <div style="display:flex; width:100%; height:30px; border-radius:5px; text-align:center; color:white; font-size:0.85em; font-weight:bold; line-height:30px; position:relative; overflow:visible;">
+                <div style="flex:1; background:#c0392b;">Very Poor</div>
+                <div style="flex:1; background:#e67e22;">Poor</div>
+                <div style="flex:1; background:#f1c40f; color:#333;">Fair</div>
+                <div style="flex:1; background:#27ae60;">Good (Target)</div>
+                <div style="flex:1; background:#2980b9;">Excellent</div>
+                <div style="flex:1; background:#8e44ad;">Superior</div>
+                <div style="position:absolute; top:-25px; left: ${fitness.pct}%; font-size:28px; transform:translateX(-50%); color:#2c3e50;">▼</div>
+            </div>
+            <div style="text-align:center; margin-top:5px; font-size:0.9em; font-weight:bold;">Patient's Fitness Position</div>
+        </div>
+    `;
+
+    // Reference Value Loading Bars
+    let o2p_target = age < 60 ? (sex==="Male"?15:10) : (sex==="Male"?12:8);
+    let vt_target = sex === "Male" ? 2.5 : 1.5;
+    
+    html += `<h4 style="margin-bottom:10px;">Maximal Cardiorespiratory Limits</h4>`;
+    html += makeProgressBar('Max Heart Rate Achieved', hr_pct, 90, '% Theoretical');
+    html += makeProgressBar('Oxygen Pulse', o2p, o2p_target, 'ml/beat', 1.5);
+    html += makeProgressBar('Tidal Volume', vt_max, vt_target, 'L/breath', 1.5);
+
+    // 2. Ventilatory
+    html += `<h3 style="color: #2980b9; margin-top: 20px;">2. VENTILATORY EFFICIENCY</h3><ul>`;
+    let ve_vco2 = parseFloat(document.getElementById('ve_vco2').value);
+    let irregular_vt = document.getElementById('irregular_vt').checked;
+    if (ve_vco2 > 34) html += `<li><strong>VERY LOW</strong> ventilatory efficiency and high cardiovascular risk (VE/VCO2 > 34).</li>`;
+    else if (ve_vco2 > 30 && irregular_vt) html += `<li><strong>POOR</strong> ventilatory efficiency (VE/VCO2 > 30 + Irregular Tidal Volume).</li>`;
+    else if (irregular_vt) html += `<li>Irregular breathing pattern observed.</li>`;
+    else html += `<li>Normal ventilatory efficiency.</li>`;
+    html += `</ul>`;
+
+    // 3. Cardiovascular
+    html += `<h3 style="color: #2980b9;">3. CARDIOVASCULAR KINETICS</h3><ul>`;
+    if (document.getElementById('early_termination').checked) {
+        if (hr_pct < 60) html += `<li><strong>Chronotropic Incompetence:</strong> Max Heart Rate < 60% + early volitional fatigue.</li>`;
+        else if (hr_pct < 80) html += `<li><strong>Low Heart Rate Reserve:</strong> Max Heart Rate < 80% + early volitional fatigue.</li>`;
+    }
+    
+    let o2b = document.getElementById('o2_pulse_behavior').value;
+    let o2p_surpassed = o2p >= o2p_target;
+    let hr_surpassed = hr_pct >= 90;
+    
+    if (o2b === "normal" && o2p_surpassed && hr_surpassed) {
+        html += `<li><strong>Normal Cardiovascular Response:</strong> Heart Rate and Oxygen Pulse show normal regular patterns and surpassed expected maximal values.</li>`;
+    } else {
+        if(o2b === "early_plateau") html += `<li><strong>Poor Cardiovascular Efficiency:</strong> Early Oxygen Pulse plateau.</li>`;
+        if(o2b === "low_flat_regular_hr") html += `<li><strong>Inotropic Incompetence:</strong> Low/flat Oxygen Pulse with regular Heart Rate.</li>`;
+        if(o2b === "low_irregular_hr") html += `<li><strong>High Cardiovascular Risk:</strong> Low Oxygen Pulse with irregular Heart Rate curve.</li>`;
+    }
+    
+    let cvs = document.getElementById('cv_sequence').value;
+    if(cvs === "o2_first") html += `<li><strong>Limitation Sequence:</strong> Cardiac contractility limitation (Oxygen plateau precedes Heart Rate deflection).</li>`;
+    if(cvs === "hr_first") html += `<li><strong>Limitation Sequence:</strong> Adrenergic receptors saturation (Heart Rate deflection precedes Oxygen plateau).</li>`;
+    html += `</ul>`;
+
+    // 4. Metabolic
+    html += `<h3 style="color: #2980b9;">4. METABOLIC CAPACITY & FLEXIBILITY</h3><ul>`;
+    let vt_pct = parseFloat(document.getElementById('vt_pct').value);
+    let mfo = parseFloat(document.getElementById('mfo').value);
+    let high_slope = document.getElementById('high_slope_hr_bf').checked;
+    let fatmax = document.getElementById('fatmax_stage').value;
+    let crossover = document.getElementById('crossover_stage').value;
+    let curve = document.getElementById('curve_symmetry').value;
+    
+    // Pressor Reflex (Exclusively VT & Kinetics)
+    if (vt_pct < 40 && high_slope) {
+        html += `<li><strong>Exaggerated Pressor Reflex:</strong> Ventilatory Threshold < 40% with high slope linear Heart Rate & Breathing Frequency.</li>`;
+    } else if (vt_pct < 40) {
+        html += `<li><strong>Poor Metabolic-Oxidative Capacity:</strong> Ventilatory Threshold < 40%.</li>`;
+    } else {
+        html += `<li>Normal metabolic-oxidative capacity (Ventilatory Threshold ≥ 40%).</li>`;
+    }
+
+    // Metabolic Inflexibility (Exclusively Lipid Kinetics)
+    if (mfo < 0.30 && fatmax === "early" && crossover === "early" && curve === "narrow") {
+        html += `<li><strong>Metabolic Inflexibility:</strong> Maximal Fat Oxidation < 0.30 g/min + Low FATmax (first 3 stages) + Early cross-over point (first 4 stages) + Narrow/left-shifted curve.</li>`;
+    }
+    html += `</ul>`;
+
+    // 5. Peripheral
+    html += `<h3 style="color: #2980b9;">5. PERIPHERAL EXTRACTION (Muscle Oxygen Saturation)</h3><ul>`;
+    let smo2 = document.getElementById('smo2_behavior').value;
+    if (smo2 === "marked_desat_low_o2") html += `<li><strong>Poor Cardiac Efficiency:</strong> Marked desaturation rate with Low Oxygen Pulse.</li>`;
+    else if (smo2 === "late_desat") html += `<li><strong>Poor Mitochondrial Capacity:</strong> Late desaturation (low slope) with Low Oxygen Uptake.</li>`;
+    else if (smo2 === "marked_desat_normal") html += `<li><strong>Poor Oxygen Extraction Capacity:</strong> Marked desaturation with Normal Oxygen Pulse and Normal Oxygen Uptake.</li>`;
+    else html += `<li>Normal peripheral oxygen extraction limits.</li>`;
+    html += `</ul>`;
+
+    document.getElementById('report-output').innerHTML = html;
+}
+</script>
+</body>
+</html>
