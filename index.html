@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>CPET Diagnostic Dashboard - Lab AEP </title>
+    <title>CPET Diagnostic Dashboard - Lab Fisiología</title>
     <style>
         body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #f4f7f6; color: #333; margin: 0; padding: 20px; }
         .header { text-align: center; margin-bottom: 25px; border-bottom: 3px solid #2980b9; padding-bottom: 10px; }
@@ -63,7 +63,7 @@
             <div class="form-group"><label>O2 Pulse (ml/beat)</label><input type="number" step="0.1" id="o2_pulse" value="16.0"></div>
             <div class="form-group"><label>Tidal Volume (L/breath)</label><input type="number" step="0.1" id="vt_max" value="2.6"></div>
         </div>
-        <div class="checkbox-group"><input type="checkbox" id="vo2_plateau"><label>Evident VO2 plateau (< 150 ml/min)</label></div>
+        <div class="checkbox-group"><input type="checkbox" id="vo2_plateau" checked><label>Evident VO2 plateau (< 150 ml/min)</label></div>
         <div class="form-row">
             <div class="form-group"><label>HR Max Achieved (%)</label><input type="number" id="hr_max_pct" value="95"></div>
             <div class="form-group"><label>Max RER</label><input type="number" step="0.01" id="rer" value="1.12"></div>
@@ -110,24 +110,26 @@
         </div>
         <div class="checkbox-group"><input type="checkbox" id="high_slope_hr_bf"><label>Linear HR & BF with High Slope</label></div>
         
-        <!-- Updated Metabolic Inflexibility Parameters -->
         <div class="form-row">
             <div class="form-group"><label>FATmax Occurred In</label>
                 <select id="fatmax_stage">
-                    <option value="late">Later stages (Normal)</option>
-                    <option value="early">First 3 test stages (Low)</option>
+                    <option value="1_3">First 3 test stages</option>
+                    <option value="1_4" selected>Initial 4 test stages</option>
+                    <option value="1_6">First 6 test stages</option>
                 </select>
             </div>
             <div class="form-group"><label>Cross-over Point In</label>
                 <select id="crossover_stage">
-                    <option value="late">Later stages (Normal)</option>
-                    <option value="early">First 4 test stages (Early)</option>
+                    <option value="1_4">First 4 test stages</option>
+                    <option value="3_6" selected>Stages 3-6</option>
+                    <option value="1_6">First 6 test stages</option>
                 </select>
             </div>
             <div class="form-group"><label>Fat Oxidation Curve</label>
                 <select id="curve_symmetry">
-                    <option value="normal">Broad / Symmetrical</option>
-                    <option value="narrow">Narrow / Left-shifted</option>
+                    <option value="narrow">Narrow / Left-shifted (Severe)</option>
+                    <option value="left_shifted" selected>Left-shifted (Standard)</option>
+                    <option value="broad">Broad / Symmetrical (High)</option>
                 </select>
             </div>
         </div>
@@ -264,7 +266,7 @@ function generateReport() {
     let hr_surpassed = hr_pct >= 90;
     
     if (o2b === "normal" && o2p_surpassed && hr_surpassed) {
-        html += `<li><strong>Normal Cardiovascular Response:</strong> Heart Rate and Oxygen Pulse show normal regular patterns and surpassed expected maximal values.</li>`;
+        html += `<li><strong>Normal Cardiovascular Response:</strong> Heart Rate and Oxygen Pulse show normal/regular patterns and surpassed expected maximal values.</li>`;
     } else {
         if(o2b === "early_plateau") html += `<li><strong>Poor Cardiovascular Efficiency:</strong> Early Oxygen Pulse plateau.</li>`;
         if(o2b === "low_flat_regular_hr") html += `<li><strong>Inotropic Incompetence:</strong> Low/flat Oxygen Pulse with regular Heart Rate.</li>`;
@@ -278,26 +280,33 @@ function generateReport() {
 
     // 4. Metabolic
     html += `<h3 style="color: #2980b9;">4. METABOLIC CAPACITY & FLEXIBILITY</h3><ul>`;
+    
+    // Pressor Reflex Interpretation
     let vt_pct = parseFloat(document.getElementById('vt_pct').value);
-    let mfo = parseFloat(document.getElementById('mfo').value);
     let high_slope = document.getElementById('high_slope_hr_bf').checked;
+    
+    if (vt_pct < 40 && high_slope) {
+        html += `<li><strong>Exaggerated Pressor Reflex:</strong> Ventilatory Threshold < 40% with high slope linear Heart Rate & Breathing Frequency.</li>`;
+    } else if (vt_pct > 40 && !high_slope && !irregular_vt) {
+        html += `<li><strong>Regular Pressor Reflex:</strong> Ventilatory Threshold > 40% and Heart Rate, Tidal Volume, and Breathing Frequency follow normal/regular patterns.</li>`;
+    }
+
+    // Metabolic Flexibility Interpretation
+    let mfo = parseFloat(document.getElementById('mfo').value);
     let fatmax = document.getElementById('fatmax_stage').value;
     let crossover = document.getElementById('crossover_stage').value;
     let curve = document.getElementById('curve_symmetry').value;
     
-    // Pressor Reflex (Exclusively VT & Kinetics)
-    if (vt_pct < 40 && high_slope) {
-        html += `<li><strong>Exaggerated Pressor Reflex:</strong> Ventilatory Threshold < 40% with high slope linear Heart Rate & Breathing Frequency.</li>`;
-    } else if (vt_pct < 40) {
-        html += `<li><strong>Poor Metabolic-Oxidative Capacity:</strong> Ventilatory Threshold < 40%.</li>`;
+    if (mfo < 0.30 && fatmax === "1_3" && crossover === "1_4" && curve === "narrow") {
+        html += `<li><strong>Metabolic Inflexibility:</strong> Maximal Fat Oxidation < 0.30 g/min + Low FATmax (first 3 stages) + Early cross-over point (first 4 stages) + Narrow curve.</li>`;
+    } else if (mfo >= 0.30 && mfo <= 0.60 && fatmax === "1_4" && crossover === "3_6" && curve === "left_shifted") {
+        html += `<li><strong>Standard Metabolic Flexibility:</strong> Maximal Fat Oxidation 0.30-0.60 g/min + FATmax within initial 4 stages + Cross-over point within stages 3-6 + Left-shifted curve.</li>`;
+    } else if (mfo > 0.70 && fatmax === "1_6" && crossover === "1_6" && curve === "broad") {
+        html += `<li><strong>High Metabolic Flexibility:</strong> Maximal Fat Oxidation > 0.70 g/min + FATmax within 6 stages + Cross-over point within first 6 test stages + Broad/symmetrical curve.</li>`;
     } else {
-        html += `<li>Normal metabolic-oxidative capacity (Ventilatory Threshold ≥ 40%).</li>`;
+        html += `<li><strong>Mixed/Indeterminate Metabolic Flexibility:</strong> Kinetic patterns do not perfectly align with classic inflexibility, standard, or high flexibility profiles. Review curves manually.</li>`;
     }
-
-    // Metabolic Inflexibility (Exclusively Lipid Kinetics)
-    if (mfo < 0.30 && fatmax === "early" && crossover === "early" && curve === "narrow") {
-        html += `<li><strong>Metabolic Inflexibility:</strong> Maximal Fat Oxidation < 0.30 g/min + Low FATmax (first 3 stages) + Early cross-over point (first 4 stages) + Narrow/left-shifted curve.</li>`;
-    }
+    
     html += `</ul>`;
 
     // 5. Peripheral
